@@ -6,11 +6,11 @@ local dg = 0.071
 local ent_count = 0
 
 local entities = {
+	name, 
 	x, 
 	y, 
 	dx, 
 	dy, 
-	name, 
 	gmod,
 	sprite,
 	size,
@@ -51,6 +51,10 @@ function _init()
 	-- comment
 	
 	cls()
+	-- set random seed
+	srand(420)
+	
+	-- some entities
 	new_entity(10, 10, 1, slide)
 	new_entity(50, 50, 1, slide)
 	new_entity(20, 20, 10, controller1, "player1", 19)
@@ -62,11 +66,53 @@ end
 
 
 -->8
---
--->8
---player code
+--velocity functions
+
+function combo(self, v, a, b)
+	b(self, a(self, v))
+end
+
+--- prefab functions
+function test_go(self)
+ wave(self)
+ dt(self)
+ friction(self)
+end
+
+function staticy(self)
+	combo(self, rnd(1), wave, abs_wave)
+	no_clip(self)
+end
+
+function staticy2(self)
+	t = rnd(1)
+	combo(self, t, wave, abs_wave)
+	no_clip(self)
+end
+
+function swirly_go(self)
+	combo(self, 0, wave, abs_wave)
+	no_clip(self)
+end
 
 --- movement functions
+function wave(self, v)
+	v = v or 0
+	self.dx += sin(time() + v)
+	self.dy += cos(time() + v)
+	
+	return(v)
+end
+
+function abs_wave(self, v)
+ v = v or 0
+	self.dx += abs(sin(time() + v))
+	self.dy += abs(cos(time() + v))
+	
+	return(v)
+end
+
+--- physics functions
 function dt(self)
 	self.x += self.dx
 	self.y += self.dy
@@ -96,16 +142,9 @@ function no_clip(self)
 	friction(self)
 end
 
-function wave(self)
-	self.dx = sin(time())
-	self.dy = cos(time())
-end
 
-function test_go(self)
- wave(self)
- dt(self)
- friction(self)
-end
+-->8
+--player code
 
 
 --- collision functions
@@ -135,11 +174,11 @@ end
 
 --- generic functions
 function kill(self)
-	del(entities, self)
+	del(entities, self.name)
 end
 
 function remove(self)
-	del(bullets, self)
+	del(bullets, self.name)
 end
 
 function do_draw(self)
@@ -155,12 +194,12 @@ end
 --- constructor
 function new_entity(_x, _y, _spr, _ctrl, _name, _size)
 	ent_count += 1
- add(entities, {
+	val = {
+  name = _name or ent_count,
   x=_x,
   y=_y,
   dx=1,
   dy=0,
-  name = _name or ent_count,
   gmod=2,
   sprite= _spr or 1,
   size = _size or 4,
@@ -171,28 +210,27 @@ function new_entity(_x, _y, _spr, _ctrl, _name, _size)
 			line(0, 0, self.x, 100, 10)
 			line(0, 0, self.dx, 105, 11)
 		end
-	})
+	}
+	
+ add(entities, val)
+ return(val)
 end
 
 
 function new_bullet(_x, _y, _spr, _ctrl, _name, _size)
- add(bullets, {
-  x=_x,
-  y=_y,
-  dx=0,
-  dy=0,
-  name= _name or ent_count,
-  gmod=0,
-  sprite= _spr or 16,
-  size = _size or 4,
-  draw=do_draw,
-  move = _ctrl or test_go,
-		die=remove,
-		debug = function(self)
-			line(0, 0, self.x, self.y, 5)
-			line(0, 0, self.dx, self.dy, 6)
-		end
-	})
+	val = new_entity(_x, _y, _spr, _ctrl, _name, _size)
+ val.gmod = 0
+ val.sprite = _spr or 16
+ val.move = _ctrl or test_go
+	--	die=remove,
+	val.debug = function(self)
+		line(0, 0, self.x, self.y, 5)
+		line(0, 0, self.dx, self.dy, 6)
+	end
+	
+	add(bullets, val)
+	--del(entities, val)
+	return(val)
 end
 
 --- draw sprites
@@ -250,7 +288,9 @@ function _update()
 	
 	go_everyone(entities)
 	go_everyone(bullets)
-	test_debug(bullets)
+	--test_debug(bullets)
+	
+	if(btnp(⬇️)) new_bullet(30, 30, 32, swirly_go)
 end
 -->8
 -- draw call
@@ -284,7 +324,7 @@ function _draw()
 	 e:draw()
 	end
 	
-	draw_debug()
+	--draw_debug()
 end
 
 function test()
@@ -324,14 +364,14 @@ c000011cc00001000000000c26622666266622222222266600000000000000000000000000000000
 c100011cc010010c00000000222662222622226622222222000000000000000000000000000000000000000800eeeee880000000000000000000000000000000
 0c1111c00c0100c00c0000c062222266222662222266622200000000000000000000000000000000000000008ee0eeeeee000000000000000000000000000000
 00cccc00000cc000000c000026222662222222222222226200000000000000000000000000000000000000008eeeeeeeee000000000000000000000000000000
-0000000000000000000000001111111111111111111111110000000000000000000000000000000000ddddde8eeeeeeeeeeeedddd00000000000000000000000
-0000000000000000000000001c1111c1111111c1111111110000000000000000000000000000000000d000ddeeeeeeeeeeee2e00d00000000000000000000000
-0000000000000000000000001cc11cc1111111c1111441110000000000000000000000000000000000d00ddeeeeeeee0ee22eed0d00000000000000000000000
-0000000000000000000000001cc1ccc11c1111c1111c4111000000000000000000000000000000000ddddd0eeee22222222eeeddd00000000000000000000000
-00000000000000000000000011cccc111c11111111c11111000000000000000000000000000000000ddd00eeeeeeeeeeeeeeee0ddd0000000000000000000000
-000000000000000000000000111cc1111c11c11111c111110000000000000000000000000000000000d000ee0eeeeee0eee22e00dd0000000000000000000000
-000000000000000000000000111111111111c11111c1111100000000000000000000000000000000000000ee022222222220e000000000000000000000000000
-000000000000000000000000111111111111111111111111000000000000000000000000000000000000000e00e0eeeeeeeee000000000000000000000000000
+0000009000000000000000001111111111111111111111110000000000000000000000000000000000ddddde8eeeeeeeeeeeedddd00000000000000000000000
+9009090000000000000000001c1111c1111111c1111111110000000000000000000000000000000000d000ddeeeeeeeeeeee2e00d00000000000000000000000
+0900090000000000000000001cc11cc1111111c1111441110000000000000000000000000000000000d00ddeeeeeeee0ee22eed0d00000000000000000000000
+0090000000000000000000001cc1ccc11c1111c1111c4111000000000000000000000000000000000ddddd0eeee22222222eeeddd00000000000000000000000
+00000900000000000000000011cccc111c11111111c11111000000000000000000000000000000000ddd00eeeeeeeeeeeeeeee0ddd0000000000000000000000
+009000900000000000000000111cc1111c11c11111c111110000000000000000000000000000000000d000ee0eeeeee0eee22e00dd0000000000000000000000
+009090090000000000000000111111111111c11111c1111100000000000000000000000000000000000000ee022222222220e000000000000000000000000000
+090000000000000000000000111111111111111111111111000000000000000000000000000000000000000e00e0eeeeeeeee000000000000000000000000000
 00cccc0000cccc0000cccc0000101c000000000000000000000000000000000000000000000000000000000ee00eeeeeeeedd000000000000000000000000000
 0c1177c00c1177c00c1117c00c7001c000000000000000000000000000000000000000000000000000000000ee00000ee0e0dd00000000000000000000000000
 c100171cc100171c0100c11c000000000000000000000000000000000000000000000000000000000000000d0deeeee0eed00d00000000000000000000000000
